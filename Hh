@@ -1,0 +1,269 @@
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "Ultimate God Script [Fluent UI Pro]",
+    SubTitle = "by Ultimate Team",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+-- สร้าง Tabs ทั้งหมดตามโครงสร้าง Fluent UI
+local Tabs = {
+    Main = Window:AddTab({ Title = "Lucky Block", Icon = "box" }),
+    Movement = Window:AddTab({ Title = "เคลื่อนไหว & บิน", Icon = "navigation" }),
+    Stealth = Window:AddTab({ Title = "ล่องหน", Icon = "eye-off" }),
+    Combat = Window:AddTab({ Title = "ต่อสู้ & โกง", Icon = "crosshair" }),
+    Visual = Window:AddTab({ Title = "มอง & เส้นรุ้ง", Icon = "eye" }),
+    World = Window:AddTab({ Title = "กราฟิก & ตั้งค่า", Icon = "settings" })
+}
+
+local Options = Fluent.Options
+local Players, ReplicatedStorage, RunService, Workspace, Lighting, UserInputService = 
+    game:GetService("Players"), game:GetService("ReplicatedStorage"), game:GetService("RunService"), 
+    game:GetService("Workspace"), game:GetService("Lighting"), game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+do
+    -- แจ้งเตือนเมื่อโหลดสำเร็จ
+    Fluent:Notify({
+        Title = "ระบบสำเร็จ!",
+        Content = "โหลดสคริปต์รวมฟังก์ชัน Fluent UI สำเร็จแล้วเพื่อน!",
+        Duration = 5
+    })
+
+    -- ==================== 1. แท็บ Lucky Block (เมนูหลัก) ====================
+    local spawnEvent = ReplicatedStorage:WaitForChild("SpawnLuckyBlock", 5)
+    local AutoSpawnToggle = Tabs.Main:AddToggle("AutoSpawn", { Title = "ออโต้สปอนลักกี้บล็อก", Default = false })
+    AutoSpawnToggle:OnChanged(function()
+        task.spawn(function()
+            while Options.AutoSpawn.Value do
+                if spawnEvent then pcall(function() spawnEvent:FireServer() end) end
+                task.wait(0.1)
+            end
+        end)
+    end)
+
+    -- ==================== 2. แท็บ เคลื่อนไหว & บิน (Speed, Fly, InfJump, Noclip) ====================
+    local isSpeed, speedVal = false, 32
+    RunService.RenderStepped:Connect(function()
+        local char = LocalPlayer.Character
+        if isSpeed and char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = speedVal end
+        end
+    end)
+
+    Tabs.Movement:AddToggle("SpeedToggle", { Title = "เปิดความเร็วเดิน/วิ่งพิเศษ", Default = false }):OnChanged(function(v) isSpeed = v end)
+    Tabs.Movement:AddSlider("SpeedSlider", { Title = "ระดับความเร็ว", Description = "ปรับความเร็วเดิน/วิ่ง", Default = 32, Min = 16, Max = 200, Rounding = 1 }):OnChanged(function(v) speedVal = v end)
+
+    local isInfJump = false
+    Tabs.Movement:AddToggle("InfJump", { Title = "กระโดดกลางอากาศไม่จำกัด (Inf Jump)", Default = false }):OnChanged(function(v) isInfJump = v end)
+    UserInputService.JumpRequest:Connect(function()
+        if isInfJump and LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+        end
+    end)
+
+    local isNoclip = false
+    RunService.Stepped:Connect(function()
+        local char = LocalPlayer.Character
+        if char and isNoclip then
+            for _, p in ipairs(char:GetDescendants()) do
+                if p:IsA("BasePart") and p.CanCollide then p.CanCollide = false end
+            end
+        end
+    end)
+    Tabs.Movement:AddToggle("Noclip", { Title = "เดินทะลุกำแพง (NoClip)", Default = false }):OnChanged(function(v) isNoclip = v end)
+
+    local isFly, bodyVel, bodyGyro = false, nil, nil
+    Tabs.Movement:AddToggle("FlyToggle", { Title = "ระบบบินอิสระ (Fly)", Default = false }):OnChanged(function(v)
+        isFly = v
+        local char = LocalPlayer.Character
+        if not char then return end
+        local root, hum = char:FindFirstChild("HumanoidRootPart"), char:FindFirstChildOfClass("Humanoid")
+        if not root or not hum then return end
+        if isFly then
+            hum.PlatformStand = true
+            bodyVel = Instance.new("BodyVelocity", root)
+            bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            bodyGyro = Instance.new("BodyGyro", root)
+            bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            task.spawn(function()
+                while isFly and root do
+                    bodyVel.Velocity = Camera.CFrame.LookVector * 70
+                    bodyGyro.CFrame = Camera.CFrame
+                    task.wait()
+                end
+            end)
+        else
+            hum.PlatformStand = false
+            if bodyVel then bodyVel:Destroy() end
+            if bodyGyro then bodyGyro:Destroy() end
+        end
+    end)
+
+    -- ==================== 3. แท็บ ล่องหนขั้นเทพ (Ultimate Invisibility) ====================
+    local isInvisible = false
+    RunService.Stepped:Connect(function()
+        local char = LocalPlayer.Character
+        if char then
+            for _, p in ipairs(char:GetDescendants()) do
+                if isInvisible then
+                    if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then p.Transparency = 1
+                    elseif p:IsA("Decal") then p.Transparency = 1
+                    elseif p:IsA("Accessory") then
+                        local handle = p:FindFirstChild("Handle")
+                        if handle then handle.Transparency = 1 end
+                    end
+                else
+                    if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then p.Transparency = 0
+                    elseif p:IsA("Decal") then p.Transparency = 0
+                    elseif p:IsA("Accessory") then
+                        local handle = p:FindFirstChild("Handle")
+                        if handle then handle.Transparency = 0 end
+                    end
+                end
+            end
+        end
+    end)
+    Tabs.Stealth:AddToggle("Invisible", { Title = "โหมดล่องหนขั้นเทพ (หายตัวสมบูรณ์ ไม่เห็นทุกคน)", Default = false }):OnChanged(function(v) isInvisible = v end)
+
+    -- ==================== 4. แท็บ ต่อสู้ & โกง (Godmode, Aimbot, Hitbox) ====================
+    local isGod = false
+    RunService.Stepped:Connect(function()
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if isGod and hum then hum.MaxHealth, hum.Health = math.huge, math.huge end
+        end
+    end)
+    Tabs.Combat:AddToggle("Godmode", { Title = "โหมดอมตะ (เลือดไม่ลด)", Default = false }):OnChanged(function(v) isGod = v end)
+
+    local isAimbot = false
+    Tabs.Combat:AddToggle("Aimbot", { Title = "ระบบล็อคเป้าศัตรูอัตโนมัติ (Aimbot)", Default = false }):OnChanged(function(v) isAimbot = v end)
+    RunService.RenderStepped:Connect(function()
+        if isAimbot then
+            local closestPlayer, shortestDistance = nil, math.huge
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    if humanoid and humanoid.Health > 0 then
+                        local pos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+                        if onScreen then
+                            local magnitude = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
+                            if magnitude < shortestDistance then
+                                shortestDistance = magnitude
+                                closestPlayer = player.Character.HumanoidRootPart
+                            end
+                        end
+                    end
+                end
+            end
+            if closestPlayer then Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position) end
+        end
+    end)
+
+    local isHitbox = false
+    Tabs.Combat:AddToggle("Hitbox", { Title = "ขยายฮิตบ็อกซ์ศัตรู (ยิงโดนง่ายขึ้น)", Default = false }):OnChanged(function(v)
+        isHitbox = v
+        task.spawn(function()
+            while isHitbox do
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        p.Character.HumanoidRootPart.Size = Vector3.new(6, 6, 6)
+                        p.Character.HumanoidRootPart.Transparency = 0.8
+                        p.Character.HumanoidRootPart.CanCollide = false
+                    end
+                end
+                task.wait(1)
+            end
+        end)
+    end)
+
+    -- ==================== 5. แท็บ มอง & เส้นรุ้ง (Rainbow Tracers & Fullbright) ====================
+    local isRainbowTracer = false
+    local tracers = {}
+    Tabs.Visual:AddToggle("RainbowTracer", { Title = "เส้นมอง ESP สีรุ้งพุ่งจากด้านล่าง", Default = false }):OnChanged(function(v)
+        isRainbowTracer = v
+        if not isRainbowTracer then
+            for _, line in pairs(tracers) do line:Remove() end
+            tracers = {}
+        end
+    end)
+
+    RunService.RenderStepped:Connect(function()
+        if isRainbowTracer then
+            local rainbowColor = Color3.fromHSV(tick() % 5 / 5, 1, 1)
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    if not tracers[player] then
+                        local line = Drawing.new("Line")
+                        line.Thickness = 2
+                        line.Transparency = 1
+                        tracers[player] = line
+                    end
+                    local rootPart = player.Character.HumanoidRootPart
+                    local pos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                    if onScreen then
+                        tracers[player].From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                        tracers[player].To = Vector2.new(pos.X, pos.Y)
+                        tracers[player].Color = rainbowColor
+                        tracers[player].Visible = true
+                    else
+                        tracers[player].Visible = false
+                    end
+                else
+                    if tracers[player] then tracers[player].Visible = false end
+                end
+            end
+        else
+            for _, line in pairs(tracers) do line.Visible = false end
+        end
+    end)
+
+    local origBright = Lighting.Brightness
+    Tabs.Visual:AddToggle("Fullbright", { Title = "เร่งแสงสว่างทั่วแมพ (Fullbright)", Default = false }):OnChanged(function(v)
+        Lighting.Brightness = v and 2 or origBright
+        Lighting.GlobalShadows = not v
+    end)
+
+    -- ==================== 6. แท็บ กราฟิก & ตั้งค่า (FPS Boost & Configs) ====================
+    Tabs.World:AddToggle("FpsBoost", { Title = "เร่ง 60+ FPS & ภาพกาก (Potato Graphics)", Default = false }):OnChanged(function(v)
+        if v then
+            pcall(function() setfpscap(999) end)
+            Lighting.GlobalShadows = false
+            Lighting.Brightness = 2
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Level0
+            for _, obj in ipairs(Workspace:GetDescendants()) do
+                if obj:IsA("BasePart") then
+                    obj.Material = Enum.Material.SmoothPlastic
+                    obj.Reflectance = 0
+                end
+            end
+        else
+            Lighting.GlobalShadows = true
+            settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+        end
+    end)
+end
+
+-- ระบบจัดการเซฟและจัดการหน้าต่าง UI (Settings & Save Manager ของ Fluent)
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+InterfaceManager:SetFolder("UltimateScriptHub")
+SaveManager:SetFolder("UltimateScriptHub/specific-game")
+
+InterfaceManager:BuildInterfaceSection(Tabs.World)
+SaveManager:BuildConfigSection(Tabs.World)
+
+Window:SelectTab(1)
+SaveManager:LoadAutoloadConfig()
