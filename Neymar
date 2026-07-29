@@ -1,0 +1,284 @@
+local success, err = pcall(function()
+    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+    local Players, ReplicatedStorage, RunService, Workspace, CoreGui, Lighting, UserInputService = 
+        game:GetService("Players"), game:GetService("ReplicatedStorage"), game:GetService("RunService"), 
+        game:GetService("Workspace"), game:GetService("CoreGui"), game:GetService("Lighting"), game:GetService("UserInputService")
+    local LocalPlayer = Players.LocalPlayer
+    local Camera = Workspace.CurrentCamera
+
+    -- ระบบภาษา (Language System)
+    local currentLang = "TH"
+    local texts = {
+        TH = { Title = "Ultimate God Script [All-in-One Pro]" },
+        EN = { Title = "Ultimate God Script [All-in-One Pro]" }
+    }
+
+    local Window = Rayfield:CreateWindow({
+       Name = texts[currentLang].Title,
+       LoadingTitle = "กำลังโหลดระบบรวมฟังก์ชันขั้นเทพ...",
+       LoadingSubtitle = "รวมทุกความโกงไว้ที่นี่ที่เดียว",
+       ConfigurationSaving = { Enabled = false },
+       KeySystem = false,
+    })
+
+    -- สร้าง Tabs ทั้งหมด
+    local Tabs = {
+        Main = Window:CreateTab("Lucky Block / หลัก", 4483362458),
+        Movement = Window:CreateTab("เคลื่อนไหว & บิน", 4483362458),
+        Stealth = Window:CreateTab("ล่องหนขั้นเทพ", 4483362458),
+        Combat = Window:CreateTab("ต่อสู้ & โกง", 4483362458),
+        Visual = Window:CreateTab("มอง & เส้นรุ้ง", 4483362458),
+        World = Window:CreateTab("กราฟิก & ตั้งค่า", 4483362458)
+    }
+
+    -- ==================== 1. เมนูหลัก: ออโต้สปอนลักกี้บล็อก ====================
+    local spawnEvent = ReplicatedStorage:WaitForChild("SpawnLuckyBlock", 5)
+    local isAutoSpawn = false
+    Tabs.Main:CreateToggle({
+       Name = "ออโต้สปอนลักกี้บล็อก (Auto Spawn)", CurrentValue = false,
+       Callback = function(v) isAutoSpawn = v end,
+    })
+    task.spawn(function()
+        while true do
+            if isAutoSpawn and spawnEvent then pcall(function() spawnEvent:FireServer() end) end
+            task.wait(0.1)
+        end
+    end)
+
+    -- ==================== 2. เคลื่อนไหว & บิน (Speed, Fly, InfJump, Noclip) ====================
+    local isSpeed, speedVal = false, 32
+    RunService.RenderStepped:Connect(function()
+        local char = LocalPlayer.Character
+        if isSpeed and char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if hum then hum.WalkSpeed = speedVal end
+        end
+    end)
+    Tabs.Movement:CreateToggle({Name = "เปิดความเร็วเดิน/วิ่งพิเศษ", CurrentValue = false, Callback = function(v) isSpeed = v end})
+    Tabs.Movement:CreateSlider({Name = "ระดับความเร็ว (Speed)", Range = {16, 200}, Increment = 1, CurrentValue = 32, Callback = function(v) speedVal = v end})
+
+    local isInfJump = false
+    Tabs.Movement:CreateToggle({Name = "กระโดดกลางอากาศไม่จำกัด (Inf Jump)", CurrentValue = false, Callback = function(v) isInfJump = v end})
+    UserInputService.JumpRequest:Connect(function()
+        if isInfJump and LocalPlayer.Character then
+            local hum = LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+        end
+    end)
+
+    local isNoclip = false
+    RunService.Stepped:Connect(function()
+        local char = LocalPlayer.Character
+        if char and isNoclip then
+            for _, p in ipairs(char:GetDescendants()) do
+                if p:IsA("BasePart") and p.CanCollide then p.CanCollide = false end
+            end
+        end
+    end)
+    Tabs.Movement:CreateToggle({Name = "เดินทะลุกำแพง (NoClip)", CurrentValue = false, Callback = function(v) isNoclip = v end})
+
+    local isFly, bodyVel, bodyGyro = false, nil, nil
+    Tabs.Movement:CreateToggle({
+       Name = "ระบบบินอิสระ (Fly)", CurrentValue = false,
+       Callback = function(v)
+          isFly = v
+          local char = LocalPlayer.Character
+          if not char then return end
+          local root, hum = char:FindFirstChild("HumanoidRootPart"), char:FindFirstChildOfClass("Humanoid")
+          if not root or not hum then return end
+          if isFly then
+              hum.PlatformStand = true
+              bodyVel = Instance.new("BodyVelocity", root)
+              bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+              bodyGyro = Instance.new("BodyGyro", root)
+              bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+              task.spawn(function()
+                  while isFly and root do
+                      bodyVel.Velocity = Camera.CFrame.LookVector * 70
+                      bodyGyro.CFrame = Camera.CFrame
+                      task.wait()
+                  end
+              end)
+          else
+              hum.PlatformStand = false
+              if bodyVel then bodyVel:Destroy() end
+              if bodyGyro then bodyGyro:Destroy() end
+          end
+       end,
+    })
+
+    -- ==================== 3. ล่องหนขั้นเทพ (Ultimate Invisibility) ====================
+    local isInvisible = false
+    RunService.Stepped:Connect(function()
+        local char = LocalPlayer.Character
+        if char then
+            for _, p in ipairs(char:GetDescendants()) do
+                if isInvisible then
+                    if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then p.Transparency = 1
+                    elseif p:IsA("Decal") then p.Transparency = 1
+                    elseif p:IsA("Accessory") then
+                        local handle = p:FindFirstChild("Handle")
+                        if handle then handle.Transparency = 1 end
+                    end
+                else
+                    if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" then p.Transparency = 0
+                    elseif p:IsA("Decal") then p.Transparency = 0
+                    elseif p:IsA("Accessory") then
+                        local handle = p:FindFirstChild("Handle")
+                        if handle then handle.Transparency = 0 end
+                    end
+                end
+            end
+        end
+    end)
+    Tabs.Stealth:CreateToggle({
+       Name = "โหมดล่องหนขั้นเทพ (หายตัวสมบูรณ์ ไม่เห็นทุกคน)", CurrentValue = false,
+       Callback = function(v) isInvisible = v end,
+    })
+
+    -- ==================== 4. ต่อสู้ & โกง (Godmode, Aimbot, Hitbox, Dmg) ====================
+    local isGod = false
+    RunService.Stepped:Connect(function()
+        local char = LocalPlayer.Character
+        if char then
+            local hum = char:FindFirstChildOfClass("Humanoid")
+            if isGod and hum then hum.MaxHealth, hum.Health = math.huge, math.huge end
+        end
+    end)
+    Tabs.Combat:CreateToggle({Name = "โหมดอมตะ (เลือดไม่ลด)", CurrentValue = false, Callback = function(v) isGod = v end})
+
+    local isAimbot = false
+    Tabs.Combat:CreateToggle({Name = "ระบบล็อคเป้าศัตรูอัตโนมัติ (Aimbot)", CurrentValue = false, Callback = function(v) isAimbot = v end})
+    RunService.RenderStepped:Connect(function()
+        if isAimbot then
+            local closestPlayer, shortestDistance = nil, math.huge
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    if humanoid and humanoid.Health > 0 then
+                        local pos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+                        if onScreen then
+                            local magnitude = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
+                            if magnitude < shortestDistance then
+                                shortestDistance = magnitude
+                                closestPlayer = player.Character.HumanoidRootPart
+                            end
+                        end
+                    end
+                end
+            end
+            if closestPlayer then Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position) end
+        end
+    end)
+
+    local isHitbox = false
+    Tabs.Combat:CreateToggle({
+       Name = "ขยายฮิตบ็อกซ์ศัตรู (ยิงโดนง่ายขึ้น)", CurrentValue = false,
+       Callback = function(v)
+          isHitbox = v
+          task.spawn(function()
+              while isHitbox do
+                  for _, p in ipairs(Players:GetPlayers()) do
+                      if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                          p.Character.HumanoidRootPart.Size = Vector3.new(6, 6, 6)
+                          p.Character.HumanoidRootPart.Transparency = 0.8
+                          p.Character.HumanoidRootPart.CanCollide = false
+                      end
+                  end
+                  task.wait(1)
+              end
+          end)
+       end,
+    })
+
+    -- ==================== 5. มอง & เส้นรุ้ง (Rainbow Tracers & Fullbright) ====================
+    local isRainbowTracer = false
+    local tracers = {}
+    Tabs.Visual:CreateToggle({
+       Name = "เส้นมอง ESP สีรุ้งพุ่งจากด้านล่าง", CurrentValue = false,
+       Callback = function(v)
+          isRainbowTracer = v
+          if not isRainbowTracer then
+              for _, line in pairs(tracers) do line:Remove() end
+              tracers = {}
+          end
+       end,
+    })
+    RunService.RenderStepped:Connect(function()
+        if isRainbowTracer then
+            local rainbowColor = Color3.fromHSV(tick() % 5 / 5, 1, 1)
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    if not tracers[player] then
+                        local line = Drawing.new("Line")
+                        line.Thickness = 2
+                        line.Transparency = 1
+                        tracers[player] = line
+                    end
+                    local rootPart = player.Character.HumanoidRootPart
+                    local pos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                    if onScreen then
+                        tracers[player].From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                        tracers[player].To = Vector2.new(pos.X, pos.Y)
+                        tracers[player].Color = rainbowColor
+                        tracers[player].Visible = true
+                    else
+                        tracers[player].Visible = false
+                    end
+                else
+                    if tracers[player] then tracers[player].Visible = false end
+                end
+            end
+        else
+            for _, line in pairs(tracers) do line.Visible = false end
+        end
+    end)
+
+    local origBright = Lighting.Brightness
+    Tabs.Visual:CreateToggle({
+       Name = "เร่งแสงสว่างทั่วแมพ (Fullbright)", CurrentValue = false,
+       Callback = function(v) Lighting.Brightness = v and 2 or origBright; Lighting.GlobalShadows = not v end,
+    })
+
+    -- ==================== 6. กราฟิก & ตั้งค่า (FPS Boost & Language) ====================
+    Tabs.World:CreateToggle({
+       Name = "เร่ง 60+ FPS & ภาพกาก (Potato Graphics)", CurrentValue = false,
+       Callback = function(v)
+          if v then
+              pcall(function() setfpscap(999) end)
+              Lighting.GlobalShadows = false
+              Lighting.Brightness = 2
+              settings().Rendering.QualityLevel = Enum.QualityLevel.Level0
+              for _, obj in ipairs(Workspace:GetDescendants()) do
+                  if obj:IsA("BasePart") then
+                      obj.Material = Enum.Material.SmoothPlastic
+                      obj.Reflectance = 0
+                  end
+              end
+          else
+              Lighting.GlobalShadows = true
+              settings().Rendering.QualityLevel = Enum.QualityLevel.Automatic
+          end
+       end,
+    })
+
+    Tabs.World:CreateDropdown({
+       Name = "เปลี่ยนภาษา UI (Language)", Options = {"TH", "EN"}, CurrentOption = "TH",
+       Callback = function(opt)
+          currentLang = opt[1]
+          Rayfield:Notify({Title = "Language", Content = "เปลี่ยนภาษาเป็น: " .. currentLang, Duration = 3})
+       end,
+    })
+
+    -- กันหลุด AFK
+    local vu = game:GetService("VirtualUser")
+    LocalPlayer.Idled:Connect(function()
+        vu:Button2Down(Vector2.new(0,0), Camera.CFrame)
+        task.wait(1)
+        vu:Button2Up(Vector2.new(0,0), Camera.CFrame)
+    end)
+
+    Rayfield:Notify({Title = "สำเร็จ!", Content = "รวมทุกฟังก์ชันไว้ในสคริปต์เดียวเรียบร้อยแล้วเพื่อน!", Duration = 5})
+end)
+
+if not success then warn("Error: " .. tostring(err)) end
