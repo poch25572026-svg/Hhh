@@ -1,0 +1,309 @@
+-- ==========================================================
+-- สคริปต์มหาเทพ67 [Spawn Spawner Hub - แยกตามชนิดบล็อก] สำหรับ Delta
+-- ==========================================================
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- สร้าง ScreenGUI พื้นฐาน
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "MahaThep67_Hub"
+ScreenGui.Parent = game:GetService("CoreGui") or LocalPlayer:WaitForChild("PlayerGui")
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 320, 0, 440)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -220)
+MainFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true -- ลากเลื่อนหน้าจอได้อิสระ
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = MainFrame
+
+-- ส่วนหัวของ UI (TitleBar)
+local TitleBar = Instance.new("TextLabel")
+TitleBar.Size = UDim2.new(1, 0, 0, 40)
+TitleBar.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+TitleBar.Text = "  มหาเทพ67 [ระบบสปอนบล็อก]"
+TitleBar.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleBar.TextSize = 15
+TitleBar.Font = Enum.Font.GothamBold
+TitleBar.TextXAlignment = Enum.TextXAlignment.Left
+TitleBar.Parent = MainFrame
+
+local TitleCorner = Instance.new("UICorner")
+TitleCorner.CornerRadius = UDim.new(0, 8)
+TitleCorner.Parent = TitleBar
+
+-- ปุ่มพับเก็บหน้าจอ (Minimize Button) ที่มุมขวาบน
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 35, 0, 35)
+MinimizeBtn.Position = UDim2.new(1, -38, 0, 2.5)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.TextSize = 18
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.Text = "-"
+MinimizeBtn.Parent = TitleBar
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 6)
+MinCorner.Parent = MinimizeBtn
+
+-- พื้นที่เลื่อนดูปุ่มฟังก์ชัน
+local ScrollingFrame = Instance.new("ScrollingFrame")
+ScrollingFrame.Size = UDim2.new(1, -10, 1, -50)
+ScrollingFrame.Position = UDim2.new(0, 5, 0, 45)
+ScrollingFrame.BackgroundTransparency = 1
+ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 850)
+ScrollingFrame.Parent = MainFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.Parent = ScrollingFrame
+
+-- ระบบกดพับเก็บ/ขยายหน้าจอ
+local isMinimized = false
+MinimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        ScrollingFrame.Visible = false
+        MainFrame.Size = UDim2.new(0, 320, 0, 40)
+        MinimizeBtn.Text = "+"
+    else
+        ScrollingFrame.Visible = true
+        MainFrame.Size = UDim2.new(0, 320, 0, 440)
+        MinimizeBtn.Text = "-"
+    end
+end)
+
+local function createButtonToggle(name, callback)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextSize = 13
+    btn.Font = Enum.Font.Gotham
+    btn.Text = name .. " [ ปิด ]"
+    btn.Parent = ScrollingFrame
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = btn
+
+    local active = false
+    btn.MouseButton1Click:Connect(function()
+        active = not active
+        if active then
+            btn.BackgroundColor3 = Color3.fromRGB(0, 170, 127)
+            btn.Text = name .. " [ เปิด ]"
+        else
+            btn.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+            btn.Text = name .. " [ ปิด ]"
+        end
+        callback(active)
+    end)
+end
+
+-- ==================== ฟังก์ชันสปอนรีโมทแยกตามบล็อก ====================
+
+local function setupSpawner(buttonName, keyword)
+    createButtonToggle(buttonName, function(state)
+        task.spawn(function()
+            local targetRemote
+            while state do
+                if not targetRemote then
+                    for _, v in ipairs(ReplicatedStorage:GetDescendants()) do
+                        if v:IsA("RemoteEvent") and v.Name:lower():find(keyword) then
+                            targetRemote = v
+                            break
+                        end
+                    end
+                end
+                
+                if targetRemote then
+                    pcall(function()
+                        targetRemote:FireServer()
+                    end)
+                end
+                task.wait(0.1)
+            end
+        end)
+    end)
+end
+
+-- 1. สปอน Limited Time Blocks
+setupSpawner("สปอน [Limited Time Blocks]", "limited")
+
+-- 2. สปอน Super Blocks
+setupSpawner("สปอน [Super Blocks]", "super")
+
+-- 3. สปอน Diamond Blocks
+setupSpawner("สปอน [Diamond Blocks]", "diamond")
+
+-- 4. สปอน Rainbow Blocks
+setupSpawner("สปอน [Rainbow Blocks]", "rainbow")
+
+-- 5. สปอน Galaxy Blocks
+setupSpawner("สปอน [Galaxy Blocks]", "galaxy")
+
+-- ==================== ฟังก์ชันเสริมและความโกงอื่นๆ ====================
+
+createButtonToggle("โหมดอมตะ (เลือดไม่ลด)", function(state)
+    task.spawn(function()
+        while state and task.wait(0.5) do
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChildOfClass("Humanoid") then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                hum.MaxHealth = math.huge
+                hum.Health = math.huge
+            end
+        end
+    end)
+end)
+
+createButtonToggle("เดินทะลุกำแพง (NoClip)", function(state)
+    RunService.Stepped:Connect(function()
+        if state and LocalPlayer.Character then
+            for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                if part:IsA("BasePart") then part.CanCollide = false end
+            end
+        end
+    end)
+end)
+
+local flyActive, bodyVel, bodyGyro = false, nil, nil
+createButtonToggle("ระบบบินอิสระ (Fly)", function(state)
+    flyActive = state
+    local char = LocalPlayer.Character
+    if not char then return end
+    local root = char:FindFirstChild("HumanoidRootPart")
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not root or not hum then return end
+
+    if flyActive then
+        hum.PlatformStand = true
+        bodyVel = Instance.new("BodyVelocity", root)
+        bodyVel.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+        bodyGyro = Instance.new("BodyGyro", root)
+        bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+        task.spawn(function()
+            while flyActive and root do
+                bodyVel.Velocity = Camera.CFrame.LookVector * 70
+                bodyGyro.CFrame = Camera.CFrame
+                task.wait()
+            end
+        end)
+    else
+        hum.PlatformStand = false
+        if bodyVel then bodyVel:Destroy() end
+        if bodyGyro then bodyGyro:Destroy() end
+    end
+end)
+
+createButtonToggle("เพิ่มความเร็วเดินพิเศษ (Speed 60)", function(state)
+    task.spawn(function()
+        while state and task.wait(0.1) do
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChildOfClass("Humanoid") then
+                char:FindFirstChildOfClass("Humanoid").WalkSpeed = 60
+            end
+        end
+        if not state and LocalPlayer.Character and LocalPlayer.Character:FindFirstChildOfClass("Humanoid") then
+            LocalPlayer.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = 16
+        end
+    end)
+end)
+
+createButtonToggle("เส้นมอง ESP สีรุ้งพุ่งจากด้านล่าง", function(state)
+    task.spawn(function()
+        local tracers = {}
+        while state do
+            local rainbowColor = Color3.fromHSV(tick() % 5 / 5, 1, 1)
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    if not tracers[player] then
+                        local line = Drawing.new("Line")
+                        line.Thickness = 2
+                        line.Transparency = 1
+                        tracers[player] = line
+                    end
+                    local rootPart = player.Character.HumanoidRootPart
+                    local pos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                    if onScreen then
+                        tracers[player].From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                        tracers[player].To = Vector2.new(pos.X, pos.Y)
+                        tracers[player].Color = rainbowColor
+                        tracers[player].Visible = true
+                    else
+                        tracers[player].Visible = false
+                    end
+                else
+                    if tracers[player] then tracers[player].Visible = false end
+                end
+            end
+            task.wait()
+        end
+        for _, line in pairs(tracers) do
+            pcall(function() line:Remove() end)
+        end
+    end)
+end)
+
+createButtonToggle("ระบบล็อคเป้าศัตรู (Aimbot)", function(state)
+    task.spawn(function()
+        while state do
+            local closestPlayer, shortestDistance = nil, math.huge
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                    local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                    if humanoid and humanoid.Health > 0 then
+                        local pos, onScreen = Camera:WorldToViewportPoint(player.Character.HumanoidRootPart.Position)
+                        if onScreen then
+                            local magnitude = (Vector2.new(pos.X, pos.Y) - Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)).Magnitude
+                            if magnitude < shortestDistance then
+                                shortestDistance = magnitude
+                                closestPlayer = player.Character.HumanoidRootPart
+                            end
+                        end
+                    end
+                end
+            end
+            if closestPlayer then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, closestPlayer.Position)
+            end
+            task.wait()
+        end
+    end)
+end)
+
+createButtonToggle("ขยายฮิตบ็อกซ์ศัตรู (6x)", function(state)
+    task.spawn(function()
+        while state do
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local root = p.Character.HumanoidRootPart
+                    root.Size = Vector3.new(6, 6, 6)
+                    root.Transparency = 0.7
+                    root.CanCollide = false
+                end
+            end
+            task.wait(1)
+        end
+    end)
+end)
+
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "มหาเทพ67",
+    Text = "โหลดสคริปต์ [สปอนบล็อกแยกชนิด] สำเร็จแล้วเพื่อน!",
+    Duration = 4
+})
