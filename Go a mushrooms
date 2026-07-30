@@ -1,0 +1,518 @@
+-- ==========================================================
+-- Script: Custom UI Library V3 (Delta กับพอช) - Ultimate Hub (Cheats + Basic + Sell + Booster + Seeds)
+-- ==========================================================
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local TeleportService = game:GetService("TeleportService")
+local LocalPlayer = Players.LocalPlayer
+
+local CustomLibrary = {}
+
+function CustomLibrary:CreateWindow(titleText, bgImageId)
+    if CoreGui:FindFirstChild("DeltaPoshUI") then
+        CoreGui.DeltaPoshUI:Destroy()
+    end
+    if LocalPlayer.PlayerGui:FindFirstChild("DeltaPoshUI") then
+        LocalPlayer.PlayerGui.DeltaPoshUI:Destroy()
+    end
+
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "DeltaPoshUI"
+    ScreenGui.ResetOnSpawn = false
+    
+    pcall(function()
+        ScreenGui.Parent = CoreGui
+    end)
+    if not ScreenGui.Parent then
+        ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+    end
+
+    -- Intro Animation
+    local IntroLabel = Instance.new("TextLabel")
+    IntroLabel.Size = UDim2.new(0, 500, 0, 100)
+    IntroLabel.Position = UDim2.new(0.5, -250, 0.5, -50)
+    IntroLabel.BackgroundTransparency = 1
+    IntroLabel.Text = titleText
+    IntroLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    IntroLabel.TextSize = 28
+    IntroLabel.Font = Enum.Font.GothamBold
+    IntroLabel.Parent = ScreenGui
+
+    local IntroStroke = Instance.new("UIStroke")
+    IntroStroke.Color = Color3.fromRGB(150, 0, 255)
+    IntroStroke.Thickness = 2
+    IntroStroke.Parent = IntroLabel
+
+    task.spawn(function()
+        task.wait(1.5)
+        local tweenInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        local textTween = TweenService:Create(IntroLabel, tweenInfo, {TextTransparency = 1})
+        local strokeTween = TweenService:Create(IntroStroke, tweenInfo, {Transparency = 1})
+        textTween:Play()
+        strokeTween:Play()
+        textTween.Completed:Wait()
+        IntroLabel:Destroy()
+    end)
+
+    -- Main Window
+    local RainbowBorder = Instance.new("Frame")
+    RainbowBorder.Size = UDim2.new(0, 440, 0, 380)
+    RainbowBorder.Position = UDim2.new(0.5, -220, 0.5, -190)
+    RainbowBorder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    RainbowBorder.BorderSizePixel = 0
+    RainbowBorder.Parent = ScreenGui
+
+    local BorderCorner = Instance.new("UICorner")
+    BorderCorner.CornerRadius = UDim.new(0, 12)
+    BorderCorner.Parent = RainbowBorder
+
+    local BorderGradient = Instance.new("UIGradient")
+    BorderGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(0.16, Color3.fromRGB(255, 127, 0)),
+        ColorSequenceKeypoint.new(0.33, Color3.fromRGB(255, 255, 0)),
+        ColorSequenceKeypoint.new(0.50, Color3.fromRGB(0, 255, 0)),
+        ColorSequenceKeypoint.new(0.66, Color3.fromRGB(0, 0, 255)),
+        ColorSequenceKeypoint.new(0.83, Color3.fromRGB(75, 0, 130)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(148, 0, 211))
+    })
+    BorderGradient.Parent = RainbowBorder
+
+    task.spawn(function()
+        while RainbowBorder and RainbowBorder.Parent do
+            BorderGradient.Rotation = (BorderGradient.Rotation + 3) % 360
+            task.wait(0.02)
+        end
+    end)
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(1, -4, 1, -4)
+    MainFrame.Position = UDim2.new(0, 2, 0, 2)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.ClipsDescendants = true
+    MainFrame.Parent = RainbowBorder
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 10)
+    UICorner.Parent = MainFrame
+
+    if bgImageId and bgImageId ~= "" then
+        local BgImage = Instance.new("ImageLabel")
+        BgImage.Size = UDim2.new(1, 0, 1, 0)
+        BgImage.BackgroundTransparency = 1
+        BgImage.Image = "rbxassetid://" .. tostring(bgImageId)
+        BgImage.ScaleType = Enum.ScaleType.Crop
+        BgImage.ImageTransparency = 0.2
+        BgImage.Parent = MainFrame
+
+        local DarkOverlay = Instance.new("Frame")
+        DarkOverlay.Size = UDim2.new(1, 0, 1, 0)
+        DarkOverlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        DarkOverlay.BackgroundTransparency = 0.4
+        DarkOverlay.BorderSizePixel = 0
+        DarkOverlay.Parent = MainFrame
+    end
+
+    -- TopBar (ใช้สำหรับลากหน้าต่าง)
+    local TopBar = Instance.new("Frame")
+    TopBar.Size = UDim2.new(1, 0, 0, 40)
+    TopBar.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+    TopBar.BorderSizePixel = 0
+    TopBar.Parent = MainFrame
+
+    local TopCorner = Instance.new("UICorner")
+    TopCorner.CornerRadius = UDim.new(0, 10)
+    TopCorner.Parent = TopBar
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -50, 1, 0)
+    Title.Position = UDim2.new(0, 15, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = titleText or "Custom UI Hub"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 15
+    Title.Font = Enum.Font.GothamBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = TopBar
+
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+    CloseBtn.Position = UDim2.new(1, -35, 0, 5)
+    CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    CloseBtn.Text = "X"
+    CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CloseBtn.TextSize = 14
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.Parent = TopBar
+
+    local CloseCorner = Instance.new("UICorner")
+    CloseCorner.CornerRadius = UDim.new(0, 6)
+    CloseCorner.Parent = CloseBtn
+
+    CloseBtn.MouseButton1Click:Connect(function()
+        ScreenGui:Destroy()
+    end)
+
+    -- Toggle Button (ปุ่มสามเหลี่ยม Δ หุบ/เปิด UI)
+    local ToggleButton = Instance.new("TextButton")
+    ToggleButton.Size = UDim2.new(0, 48, 0, 48)
+    ToggleButton.Position = UDim2.new(0, 20, 0.4, 0)
+    ToggleButton.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+    ToggleButton.Text = "Δ"
+    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleButton.TextSize = 22
+    ToggleButton.Font = Enum.Font.GothamBold
+    ToggleButton.BorderSizePixel = 0
+    ToggleButton.Parent = ScreenGui
+
+    local ToggleCorner = Instance.new("UICorner")
+    ToggleCorner.CornerRadius = UDim.new(1, 0)
+    ToggleCorner.Parent = ToggleButton
+
+    local ToggleGradient = Instance.new("UIGradient")
+    ToggleGradient.Color = BorderGradient.Color
+    ToggleGradient.Parent = ToggleButton
+
+    local tDragging, tDragStart, tStartPos, hasMoved = false, nil, nil, false
+    ToggleButton.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            tDragging = true
+            hasMoved = false
+            tDragStart = input.Position
+            tStartPos = ToggleButton.Position
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if tDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - tDragStart
+            if delta.Magnitude > 5 then
+                hasMoved = true
+            end
+            ToggleButton.Position = UDim2.new(tStartPos.X.Scale, tStartPos.X.Offset + delta.X, tStartPos.Y.Scale, tStartPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            tDragging = false
+        end
+    end)
+
+    local isUIVisible = true
+    ToggleButton.MouseButton1Click:Connect(function()
+        if not hasMoved then
+            isUIVisible = not isUIVisible
+            RainbowBorder.Visible = isUIVisible
+        end
+    end)
+
+    -- Container
+    local Container = Instance.new("ScrollingFrame")
+    Container.Size = UDim2.new(1, -20, 1, -55)
+    Container.Position = UDim2.new(0, 10, 0, 45)
+    Container.BackgroundTransparency = 1
+    Container.BorderSizePixel = 0
+    Container.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Container.ScrollBarThickness = 4
+    Container.Parent = MainFrame
+
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Padding = UDim.new(0, 6)
+    UIListLayout.Parent = Container
+
+    UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Container.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+    end)
+
+    -- ระบบลากหน้าต่างเฉพาะตรง TopBar
+    local dragging, dragStart, startPos
+    TopBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = RainbowBorder.Position
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            RainbowBorder.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    local WindowFunctions = {}
+    
+    function WindowFunctions:AddSection(sectionText)
+        local Section = Instance.new("TextLabel")
+        Section.Size = UDim2.new(1, 0, 0, 24)
+        Section.BackgroundTransparency = 1
+        Section.Text = "  " .. sectionText
+        Section.TextColor3 = Color3.fromRGB(130, 200, 255)
+        Section.TextSize = 13
+        Section.Font = Enum.Font.GothamBold
+        Section.TextXAlignment = Enum.TextXAlignment.Left
+        Section.Parent = Container
+    end
+
+    function WindowFunctions:AddButton(buttonText, callback)
+        local Button = Instance.new("TextButton")
+        Button.Size = UDim2.new(1, 0, 0, 34)
+        Button.BackgroundColor3 = Color3.fromRGB(40, 40, 52)
+        Button.BorderSizePixel = 0
+        Button.Text = buttonText
+        Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+        Button.TextSize = 13
+        Button.Font = Enum.Font.GothamSemibold
+        Button.Parent = Container
+
+        local BtnCorner = Instance.new("UICorner")
+        BtnCorner.CornerRadius = UDim.new(0, 6)
+        BtnCorner.Parent = Button
+
+        Button.MouseButton1Click:Connect(function()
+            if callback then
+                pcall(callback)
+            end
+        end)
+    end
+
+    return WindowFunctions
+end
+
+-- ==========================================================
+-- เรียกใช้งาน Hub และฟังก์ชันทั้งหมด (Cheats + Basic + Sell + Booster + Seeds)
+-- ==========================================================
+local MyWindow = CustomLibrary:CreateWindow("Delta กับพอช - Complete Mushroom Hub", "124979297916049")
+
+-- หมวดหมู่: สคริปพื้นฐาน (Basic Utilities)
+MyWindow:AddSection("🛠️ หมวดหมู่: สคริปพื้นฐาน (Utility)")
+
+MyWindow:AddButton("Anti-AFK (กันหลุดเกมเมื่อไม่ได้ขยับ)", function()
+    local vu = game:GetService("VirtualUser")
+    LocalPlayer.Idled:Connect(function()
+        vu:Button2Down(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        vu:Button2Up(Vector2.new(0,0), workspace.CurrentCamera.CFrame)
+    end)
+end)
+
+MyWindow:AddButton("FullBright (เร่งความสว่างรอบตัวให้มองเห็นชัดเจน)", function()
+    Lighting.Brightness = 2
+    Lighting.ClockTime = 14
+    Lighting.GlobalShadows = false
+    Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
+end)
+
+MyWindow:AddButton("Rejoin Server (รีจอยเข้าเซิร์ฟใหม่ทันที)", function()
+    TeleportService:Teleport(game.PlaceId, LocalPlayer)
+end)
+
+-- หมวดหมู่: ระบบขายของ & จัดการกระเป๋า (Sell & Inventory)
+MyWindow:AddSection("🛒 หมวดหมู่: ระบบขายของ (Sell Shop)")
+
+MyWindow:AddButton("ขายไอเทม/ผลผลิตทั้งหมดในกระเป๋า (Sell All Items)", function()
+    pcall(function()
+        if ReplicatedStorage:FindFirstChild("SellAllRequest") then
+            ReplicatedStorage.SellAllRequest:FireServer()
+        elseif ReplicatedStorage:FindFirstChild("SellRequest") then
+            ReplicatedStorage.SellRequest:FireServer()
+        elseif ReplicatedStorage:FindFirstChild("Sell") then
+            ReplicatedStorage.Sell:FireServer()
+        else
+            -- เผื่อชื่อรีโมทในเกมนี้ ใช้การจำลองกดปุ่มหรือยิง Event ทั่วไป
+            for _, v in ipairs(ReplicatedStorage:GetDescendants()) do
+                if v:IsA("RemoteEvent") and (v.Name:lower():find("sell") or v.Name:lower():find("sale")) then
+                    v:FireServer()
+                end
+            end
+        end
+    end)
+end)
+
+-- หมวดหมู่: โกงตัวละคร (Player Cheats)
+MyWindow:AddSection("⚡ หมวดหมู่: โกงความเร็ว & บิน & กระโดด")
+
+MyWindow:AddButton("เดินปกติ (WalkSpeed: 16)", function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChildOfClass("Humanoid") then
+        char:FindFirstChildOfClass("Humanoid").WalkSpeed = 16
+    end
+end)
+
+MyWindow:AddButton("เดินเร็ว (WalkSpeed: 50)", function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChildOfClass("Humanoid") then
+        char:FindFirstChildOfClass("Humanoid").WalkSpeed = 50
+    end
+end)
+
+MyWindow:AddButton("เดินโคตรเร็ว (WalkSpeed: 150)", function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChildOfClass("Humanoid") then
+        char:FindFirstChildOfClass("Humanoid").WalkSpeed = 150
+    end
+end)
+
+MyWindow:AddButton("กระโดดสูง (JumpPower: 100)", function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChildOfClass("Humanoid") then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        hum.UseJumpPower = true
+        hum.JumpPower = 100
+    end
+end)
+
+MyWindow:AddButton("กระโดดสูงปรี๊ด (JumpPower: 250)", function()
+    local char = LocalPlayer.Character
+    if char and char:FindFirstChildOfClass("Humanoid") then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        hum.UseJumpPower = true
+        hum.JumpPower = 250
+    end
+end)
+
+local flying = false
+MyWindow:AddButton("Toggle บินเร็ว (Fly On/Off)", function()
+    flying = not flying
+    local char = LocalPlayer.Character
+    if not char then return end
+    local rootPart = char:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return end
+
+    if flying then
+        local bv = Instance.new("BodyVelocity")
+        bv.Name = "FlyVelocity"
+        bv.MaxForce = Vector3.new(90000, 90000, 90000)
+        bv.Velocity = Vector3.new(0, 0, 0)
+        bv.Parent = rootPart
+
+        task.spawn(function()
+            while flying and char and rootPart.Parent do
+                local cam = workspace.CurrentCamera
+                local vel = Vector3.new(0, 0, 0)
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    vel = vel + (cam.CFrame.LookVector * 50)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    vel = vel - (cam.CFrame.LookVector * 50)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    vel = vel - (cam.CFrame.RightVector * 50)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    vel = vel + (cam.CFrame.RightVector * 50)
+                end
+                bv.Velocity = vel
+                RunService.RenderStepped:Wait()
+            end
+            if rootPart:FindFirstChild("FlyVelocity") then
+                rootPart.FlyVelocity:Destroy()
+            end
+        end)
+    else
+        if rootPart:FindFirstChild("FlyVelocity") then
+            rootPart.FlyVelocity:Destroy()
+        end
+    end
+end)
+
+-- หมวดหมู่: น้ำเร่งโต (Booster Shop)
+MyWindow:AddSection("🧪 หมวดหมู่: เสกน้ำเร่งโตฟรี (Booster Shop)")
+
+MyWindow:AddButton("เสกฟรี: Speed Growth", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Speed Growth", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Growth Booster", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Growth Booster", 0)
+end)
+
+-- หมวดหมู่: เสกเมล็ดเห็ดฟรีทุกตัวจากร้านค้า (Mushroom Shop Seeds)
+MyWindow:AddSection("🍄 หมวดหมู่: เสกเมล็ดเห็ดฟรี (Common & Uncommon)")
+
+MyWindow:AddButton("เสกฟรี: Brown Mushroom Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Brown Mushroom Seed", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Red Mushroom Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Red Mushroom Seed", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Chestnut Cap Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Chestnut Cap Seed", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Yellow Button Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Yellow Button Seed", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Blue Oyster Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Blue Oyster Seed", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Bright Bell Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Bright Bell Seed", 0)
+end)
+
+MyWindow:AddSection("🍄 หมวดหมู่: เสกเมล็ดเห็ดฟรี (Rare)")
+
+MyWindow:AddButton("เสกฟรี: Bubble Shrom Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Bubble Shrom Seed", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Ghost Cap Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Ghost Cap Seed", 0)
+end)
+
+MyWindow:AddSection("🍄 หมวดหมู่: เสกเมล็ดเห็ดฟรี (Legendary)")
+
+MyWindow:AddButton("เสกฟรี: Starcap Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Starcap Seed", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Glow Shrom Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Glow Shrom Seed", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Glacier Crown Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Glacier Crown Seed", 0)
+end)
+
+MyWindow:AddSection("🍄 หมวดหมู่: เสกเมล็ดเห็ดฟรี (Radiant)")
+
+MyWindow:AddButton("เสกฟรี: Lava Fungus Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Lava Fungus Seed", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Amethyst Bloom Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Amethyst Bloom Seed", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Candy Puff Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Candy Puff Seed", 0)
+end)
+
+MyWindow:AddSection("🍄 หมวดหมู่: เสกเมล็ดเห็ดฟรี (Mythical)")
+
+MyWindow:AddButton("เสกฟรี: Galaxy Cap Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Galaxy Cap Seed", 0)
+end)
+
+MyWindow:AddButton("เสกฟรี: Magic Mushroom Seed", function()
+    ReplicatedStorage:WaitForChild("BuySeedRequest"):FireServer("Magic Mushroom Seed", 0)
+end)
