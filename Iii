@@ -1,0 +1,464 @@
+-- ==========================================================
+-- Script: Delta & Posh - MM2 Compact Ultimate Hub v2.2 (Chroma Edition)
+-- ==========================================================
+local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local TeleportService = game:GetService("TeleportService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- ลบ UI เก่าทิ้ง
+if CoreGui:FindFirstChild("DeltaPoshGodHub") then CoreGui.DeltaPoshGodHub:Destroy() end
+if LocalPlayer.PlayerGui:FindFirstChild("DeltaPoshGodHub") then LocalPlayer.PlayerGui.DeltaPoshGodHub:Destroy() end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "DeltaPoshGodHub"
+ScreenGui.ResetOnSpawn = false
+pcall(function() ScreenGui.Parent = CoreGui end)
+if not ScreenGui.Parent then ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui") end
+
+-- Main Window Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 340, 0, 380)
+MainFrame.Position = UDim2.new(0.5, -170, 0.5, -190)
+MainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainFrame
+
+-- Top Bar
+local TopBar = Instance.new("Frame")
+TopBar.Size = UDim2.new(1, 0, 0, 35)
+TopBar.BackgroundColor3 = Color3.fromRGB(25, 25, 32)
+TopBar.BorderSizePixel = 0
+TopBar.Parent = MainFrame
+
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0, 10)
+TopCorner.Parent = TopBar
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -75, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "⚡ Delta & Posh: MM2 Hub"
+Title.TextColor3 = Color3.fromRGB(0, 255, 170)
+Title.TextSize = 11
+Title.Font = Enum.Font.GothamBold
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TopBar
+
+-- Minimize Button
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 24, 0, 24)
+MinBtn.Position = UDim2.new(1, -54, 0, 5)
+MinBtn.BackgroundColor3 = Color3.fromRGB(50, 150, 255)
+MinBtn.Text = "-"
+MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinBtn.TextSize = 12
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.Parent = TopBar
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 12)
+MinCorner.Parent = MinBtn
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Position = UDim2.new(1, -26, 0, 5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(230, 50, 50)
+CloseBtn.Text = "X"
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.TextSize = 10
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.Parent = TopBar
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 12)
+CloseCorner.Parent = CloseBtn
+
+CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+
+-- ปุ่มวงกลมลอยตอนย่อจอ
+local FloatCircle = Instance.new("TextButton")
+FloatCircle.Size = UDim2.new(0, 40, 0, 40)
+FloatCircle.Position = UDim2.new(0, 20, 0, 100)
+FloatCircle.BackgroundColor3 = Color3.fromRGB(0, 255, 170)
+FloatCircle.Text = "⚡"
+FloatCircle.TextColor3 = Color3.fromRGB(0, 0, 0)
+FloatCircle.TextSize = 18
+FloatCircle.Visible = false
+FloatCircle.Active = true
+FloatCircle.Draggable = true
+FloatCircle.Parent = ScreenGui
+
+local FloatCorner = Instance.new("UICorner")
+FloatCorner.CornerRadius = UDim.new(0, 20)
+FloatCorner.Parent = FloatCircle
+
+MinBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    FloatCircle.Visible = true
+end)
+
+FloatCircle.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    FloatCircle.Visible = false
+end)
+
+-- Scrolling Container
+local Container = Instance.new("ScrollingFrame")
+Container.Size = UDim2.new(1, -12, 1, -45)
+Container.Position = UDim2.new(0, 6, 0, 40)
+Container.BackgroundTransparency = 1
+Container.BorderSizePixel = 0
+Container.CanvasSize = UDim2.new(0, 0, 0, 0)
+Container.ScrollBarThickness = 3
+Container.Parent = MainFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout.Padding = UDim.new(0, 5)
+UIListLayout.Parent = Container
+
+UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    Container.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+end)
+
+local function AddSection(text)
+    local Sec = Instance.new("TextLabel")
+    Sec.Size = UDim2.new(1, 0, 0, 20)
+    Sec.BackgroundTransparency = 1
+    Sec.Text = "📂 " .. text
+    Sec.TextColor3 = Color3.fromRGB(255, 190, 0)
+    Sec.TextSize = 11
+    Sec.Font = Enum.Font.GothamBold
+    Sec.TextXAlignment = Enum.TextXAlignment.Left
+    Sec.Parent = Container
+end
+
+local function AddToggle(text, default, callback)
+    local toggled = default
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(1, 0, 0, 28)
+    Btn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+    Btn.BorderSizePixel = 0
+    Btn.Text = "  " .. text .. ": " .. (toggled and "ON [✓]" or "OFF [X]")
+    Btn.TextColor3 = toggled and Color3.fromRGB(50, 255, 50) or Color3.fromRGB(255, 50, 50)
+    Btn.TextSize = 11
+    Btn.Font = Enum.Font.GothamSemibold
+    Btn.TextXAlignment = Enum.TextXAlignment.Left
+    Btn.Parent = Container
+    
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 5)
+    Corner.Parent = Btn
+
+    Btn.MouseButton1Click:Connect(function()
+        toggled = not toggled
+        Btn.Text = "  " .. text .. ": " .. (toggled and "ON [✓]" or "OFF [X]")
+        Btn.TextColor3 = toggled and Color3.fromRGB(50, 255, 50) or Color3.fromRGB(255, 50, 50)
+        pcall(function() callback(toggled) end)
+    end)
+end
+
+local function AddButton(text, callback)
+    local Btn = Instance.new("TextButton")
+    Btn.Size = UDim2.new(1, 0, 0, 28)
+    Btn.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+    Btn.BorderSizePixel = 0
+    Btn.Text = text
+    Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Btn.TextSize = 11
+    Btn.Font = Enum.Font.GothamSemibold
+    Btn.Parent = Container
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 5)
+    Corner.Parent = Btn
+
+    Btn.MouseButton1Click:Connect(function() pcall(callback) end)
+end
+
+-- ==========================================
+-- ฟังก์ชันหลักตามโจทย์
+-- ==========================================
+
+AddSection("🔥 ฟังก์ชันโชว์พาวกวนๆ (Chroma Flex)")
+
+local chromaFlexActive = false
+AddToggle("Chroma God Flex (ร่างรุ้ง 7 สี + หมุนโชว์พาว)", false, function(state) chromaFlexActive = state end)
+task.spawn(function()
+    while true do
+        task.wait()
+        if chromaFlexActive and LocalPlayer.Character then
+            pcall(function()
+                -- สีรุ้งวิบวับ
+                local hue = (tick() % 4) / 4
+                local rainbowColor = Color3.fromHSV(hue, 1, 1)
+                for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                        part.Color = rainbowColor
+                    end
+                end
+                -- หมุนตัวกวนๆ
+                local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.CFrame = hrp.CFrame * CFrame.Angles(0, math.rad(35), 0)
+                end
+            end)
+        end
+    end
+end)
+
+AddSection("1. ระบบล็อคเป้า & ขยายฮิตบ็อกซ์")
+
+local sheriffLockActive = false
+AddToggle("Sheriff Target Lock (นายอำเภอล็อคเป้าฆาตกร)", false, function(state) sheriffLockActive = state end)
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if sheriffLockActive then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local hasGun = LocalPlayer.Backpack:FindFirstChild("Gun") or (char and char:FindFirstChild("Gun"))
+                if hasGun then
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= LocalPlayer and p.Character then
+                            local bp = p:FindFirstChild("Backpack")
+                            local hasKnife = (bp and bp:FindFirstChild("Knife")) or p.Character:FindFirstChild("Knife")
+                            if hasKnife and p.Character:FindFirstChild("HumanoidRootPart") then
+                                Camera.CFrame = CFrame.new(Camera.CFrame.Position, p.Character.HumanoidRootPart.Position)
+                                break
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+local murdererLockActive = false
+AddToggle("Murderer Target Lock (ฆาตกรล็อคเป้าใกล้สุด)", false, function(state) murdererLockActive = state end)
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if murdererLockActive then
+            pcall(function()
+                local char = LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                local hasKnife = LocalPlayer.Backpack:FindFirstChild("Knife") or (char and char:FindFirstChild("Knife"))
+                if hrp and hasKnife then
+                    local closest, minDist = nil, math.huge
+                    for _, p in ipairs(Players:GetPlayers()) do
+                        if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                            local dist = (hrp.Position - p.Character.HumanoidRootPart.Position).Magnitude
+                            if dist < minDist then
+                                minDist = dist
+                                closest = p.Character.HumanoidRootPart
+                            end
+                        end
+                    end
+                    if closest then
+                        Camera.CFrame = CFrame.new(Camera.CFrame.Position, closest.Position)
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+local hitboxActive = false
+AddToggle("Hitbox Expander (ขยายตัวผู้เล่นยิงโดนง่ายๆ)", false, function(state) hitboxActive = state end)
+task.spawn(function()
+    while true do
+        task.wait(1)
+        if hitboxActive then
+            pcall(function()
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        local hrp = p.Character.HumanoidRootPart
+                        hrp.Size = Vector3.new(6, 6, 6)
+                        hrp.Transparency = 0.6
+                        hrp.CanCollide = false
+                    end
+                end
+            end)
+        else
+            pcall(function()
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p ~= LocalPlayer and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                        local hrp = p.Character.HumanoidRootPart
+                        hrp.Size = Vector3.new(2, 2, 1)
+                        hrp.Transparency = 1
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+AddSection("2. ระบบมองทะลุ & แสงสว่าง")
+local espActive = false
+AddToggle("MM2 Role ESP (ฆาตกรแดง/ตำรวจน้ำเงิน)", false, function(state) espActive = state end)
+task.spawn(function()
+    while true do
+        task.wait(1)
+        if espActive then
+            pcall(function()
+                for _, player in ipairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer and player.Character then
+                        local char = player.Character
+                        local hl = char:FindFirstChild("MM2_HL") or Instance.new("Highlight", char)
+                        hl.Name = "MM2_HL"
+                        local bp = player:FindFirstChild("Backpack")
+                        local hasKnife = (bp and bp:FindFirstChild("Knife")) or char:FindFirstChild("Knife")
+                        local hasGun = (bp and bp:FindFirstChild("Gun")) or char:FindFirstChild("Gun")
+                        
+                        if hasKnife then hl.FillColor = Color3.fromRGB(255, 40, 40)
+                        elseif hasGun then hl.FillColor = Color3.fromRGB(40, 100, 255)
+                        else hl.FillColor = Color3.fromRGB(40, 255, 40) end
+                    end
+                end
+            end)
+        else
+            pcall(function()
+                for _, p in ipairs(Players:GetPlayers()) do
+                    if p.Character and p.Character:FindFirstChild("MM2_HL") then p.Character.MM2_HL:Destroy() end
+                end
+            end)
+        end
+    end
+end)
+
+AddToggle("FullBright (เปิดแสงสว่าง)", false, function(state)
+    Lighting.Brightness = state and 2 or 1
+    Lighting.ClockTime = state and 14 or 12
+    Lighting.GlobalShadows = not state
+end)
+
+AddSection("3. ระบบวาร์ป & ฟาร์มเหรียญ")
+AddButton("วาร์ปไปหาฆาตกรด่วน", function()
+    pcall(function()
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer and p.Character then
+                    local bp = p:FindFirstChild("Backpack")
+                    local hasKnife = (bp and bp:FindFirstChild("Knife")) or p.Character:FindFirstChild("Knife")
+                    if hasKnife and p.Character:FindFirstChild("HumanoidRootPart") then
+                        hrp.CFrame = p.Character.HumanoidRootPart.CFrame + Vector3.new(0, 3, 0)
+                        break
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+AddButton("วาร์ปไปเก็บปืนที่ตก", function()
+    pcall(function()
+        local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        local gunDrop = workspace:FindFirstChild("GunDrop")
+        if hrp and gunDrop and gunDrop:FindFirstChild("Handle") then
+            hrp.CFrame = gunDrop.Handle.CFrame + Vector3.new(0, 3, 0)
+        end
+    end)
+end)
+
+local autoCoin = false
+AddToggle("Auto Coin Farm (เก็บเหรียญออโต้)", false, function(state) autoCoin = state end)
+task.spawn(function()
+    while true do
+        task.wait(0.4)
+        if autoCoin then
+            pcall(function()
+                local hrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    for _, folder in ipairs(workspace:GetChildren()) do
+                        if folder.Name:lower():find("coin") or folder.Name == "CoinContainer" then
+                            for _, coin in ipairs(folder:GetChildren()) do
+                                local part = coin:FindFirstChild("CoinVisual") or coin
+                                if part:IsA("BasePart") then
+                                    hrp.CFrame = part.CFrame
+                                    task.wait(0.1)
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+            end)
+        end
+    end
+end)
+
+AddSection("4. ฟังก์ชันเสริมอื่นๆ")
+
+local infJump = false
+AddToggle("1. Infinite Jump (กระโดดกลางอากาศ)", false, function(state) infJump = state end)
+UserInputService.JumpRequest:Connect(function()
+    if infJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+        LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
+
+local noclipActive = false
+AddToggle("2. Noclip (เดินทะลุกำแพง)", false, function(state) noclipActive = state end)
+RunService.Stepped:Connect(function()
+    if noclipActive and LocalPlayer.Character then
+        for _, part in ipairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then part.CanCollide = false end
+        end
+    end
+end)
+
+AddToggle("3. Speed Hack (วิ่งไวขึ้น)", false, function(state)
+    local hum = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid")
+    if hum then hum.WalkSpeed = state and 23 or 16 end
+end)
+
+AddButton("4. FOV Changer (มุมมองกว้าง 120)", function()
+    Camera.FieldOfView = 120
+end)
+
+AddButton("5. Save Position (บันทึกจุดยืน)", function()
+    _G.SavedPos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character.HumanoidRootPart.CFrame
+end)
+
+AddButton("6. Teleport Back (วาร์ปกลับจุดเดิม)", function()
+    if _G.SavedPos and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        LocalPlayer.Character.HumanoidRootPart.CFrame = _G.SavedPos
+    end
+end)
+
+AddButton("7. Server Hop (สลับห้องใหม่)", function()
+    pcall(function()
+        local servers = game:GetService("HttpService"):JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/"..game.PlaceId.."/servers/Public?sortOrder=Asc&limit=100"))
+        for _, s in ipairs(servers.data) do
+            if s.playing < s.maxPlayers and s.id ~= game.JobId then
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, LocalPlayer)
+                break
+            end
+        end
+    end)
+end)
+
+AddButton("8. Anti-AFK (กันหลุดห้อง)", function()
+    local vu = game:GetService("VirtualUser")
+    LocalPlayer.Idled:Connect(function()
+        vu:Button2Down(Vector2.new(0,0), Camera.CFrame)
+        task.wait(1)
+        vu:Button2Up(Vector2.new(0,0), Camera.CFrame)
+    end)
+end)
